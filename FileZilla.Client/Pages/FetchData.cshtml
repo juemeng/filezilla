@@ -1,0 +1,121 @@
+﻿@page "/fetchdata"
+@using System.Net
+@using System.IO
+@inject HttpClient Http
+
+<h1>FileZilla</h1>
+
+<p>easy download and upload files</p>
+
+@if (nodes == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    @if(previousNodes != null)
+    {
+        <a href="javascript:void(0)" onclick="@Prev">上一级</a>
+    }
+    <table class="table">
+        <thead>
+            <tr>
+                <th>FileName</th>
+                <th>Size</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var node in nodes)
+            {
+                <tr>
+                    <td>
+                        <img src="@node.Icon">
+                        @if(node.IsFolder) 
+                        {
+                            <a href="javascript:void(0)" onclick="@(()=>Next(node))">@node.Name</a>
+                        }
+                        else
+                        {
+                            @node.Name
+                        }
+                    </td>
+                    <td>@node.Size</td>
+                    <td>@node.LastModifiedTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@functions {
+    List<Node> nodes;
+    List<Node> previousNodes;
+    List<string> iconTypes = new List<string>
+    {
+        "js","html","css","pdf","doc","docx","xls","xlsx"
+    };
+    List<string> imageTypes = new List<string>
+    {
+        "js","html","css","pdf","doc","docx","xls","xlsx"
+    };
+
+    protected override async Task OnInitAsync()
+    {
+        nodes = await Http.GetJsonAsync<List<Node>>("http://localhost:5555/api/files/root");
+        Setup(nodes);
+    }
+
+    private void Setup(List<Node> currentNodes)
+    {
+        currentNodes.ForEach(n=>{
+            n.Icon = GetIcon(n);
+            n.Href = "http://localhost:5555/api/files/"+ WebUtility.UrlEncode(n.FullName);
+        });
+    }
+
+    private string GetIcon(Node node)
+    {
+        if(node.IsFolder)
+        {
+            return Path.Combine("images","folder.png");
+        }
+        else 
+        {
+            var ext = Path.GetExtension(node.Name).Substring(1);
+            if(imageTypes.Contains(ext)) {
+                return Path.Combine("images","image.png");
+            }
+            var type = iconTypes.Contains(ext)?ext:"default";
+            return Path.Combine("images",$"{type}.png");
+        }
+    }
+
+    public void Prev()
+    {
+        nodes = previousNodes;
+        previousNodes = null;
+    }
+
+    public async void Next(Node node)
+    {
+        var newNodes = await Http.GetJsonAsync<List<Node>>(node.Href);
+        Setup(newNodes);
+        previousNodes = nodes;
+        nodes = newNodes;
+    }
+
+
+
+    public class Node
+    {
+        public DateTime LastModifiedTime { get; set; }
+        public string Name { get; set; }
+        public string FullName { get; set; }
+        public string Href { get; set; }
+        public int? Size { get; set; }
+        public string Summary { get; set; }
+        public bool IsFolder {get;set;}
+        public string Icon {get;set;}
+    }
+}
