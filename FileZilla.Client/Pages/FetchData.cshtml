@@ -82,6 +82,10 @@ else
         }
         else 
         {
+            if(String.IsNullOrEmpty(Path.GetExtension(node.Name)))
+            {
+                return Path.Combine("images","default.png");
+            }
             var ext = Path.GetExtension(node.Name).Substring(1);
             if(imageTypes.Contains(ext)) {
                 return Path.Combine("images","image.png");
