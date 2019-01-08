@@ -1,0 +1,7 @@
+Api/.idea
+Api/bin
+Api/obj
+launchSettings.json
+FileZilla.Client/.vscode
+FileZilla.Client/bin
+FileZilla.Client/obj
